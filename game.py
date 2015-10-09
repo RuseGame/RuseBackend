@@ -8,6 +8,7 @@ class Game:
     """
     An object to contain an entire game of Ruse.
     """
+
     def __init__(self, game_id, emitter):
         self.game_id = game_id
         self.emitter = emitter
@@ -21,15 +22,23 @@ class Game:
             5 players already joined or
             player already joined
         """
+
         if len(self.players.keys()) > 4:
             return False
         if player_cookie in self.players:
             return False
         player = Player(player_cookie, nickname)
-        self.players.append(player)
+        self.players[player_cookie] = player
+
+        if len(self.players.keys()) == 5:
+            self.start_game()
         return True
 
     def start_game(self):
+        """
+        Give everyone an alias and target, then start the turn
+        """
+
         aliases = shuffled(ALIASES[:])
         for player in self.players:
             player.alias = aliases.pop()
