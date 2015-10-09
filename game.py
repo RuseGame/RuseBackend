@@ -1,4 +1,4 @@
-from random import shuffled, shuffle, choice
+from random import shuffled, shuffle
 
 NUM_PLAYERS = 5
 ALIASES = ["Pink", "Green", "Blue", "White", "Orange"]
@@ -49,6 +49,10 @@ class Game:
         self.players[-1].target = self.players[0].alias
 
         # TODO: send initial messages
+        for player in self.players:
+            player.inbox[0].append("Hello " + str(player) + ",")
+            player.inbox[0].append("Your target is Mr. " + player.target)
+            self.emitter.update(player.cookie, player._to_dict())
 
     def start_turn(self):
         # TODO: send turn start message
@@ -65,14 +69,20 @@ class Player:
     def __init__(self, cookie, nickname):
         self.cookie = cookie
         self.name = nickname
-        self.honorific = choice(["Mr.", "Ms."])
-        self.inbox = []
-        self.outbox = []
+        self.inbox = [[]]
         self.alias = None
         self.target = None
 
     def __str__(self):
-        return self.honorific + " " + self.alias
+        return "Mr. " + self.alias
+
+    def _to_dict(self):
+        return {
+            "name": self.nickname,
+            "inbox": self.inbox,
+            "alias": self.alias,
+            "target": self.target
+        }
 
 
 class Turn:
