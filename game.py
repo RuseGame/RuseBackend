@@ -1,4 +1,4 @@
-from random import shuffled, shuffle
+from random import shuffle
 
 NUM_PLAYERS = 5
 ALIASES = ["Pink", "Green", "Blue", "White", "Orange"]
@@ -39,7 +39,8 @@ class Game:
         Give everyone an alias and target, then start the turn
         """
 
-        aliases = shuffled(ALIASES[:])
+        aliases = ALIASES[:]
+        shuffle(aliases)
         for player in self.players:
             player.alias = aliases.pop()
 
@@ -48,10 +49,9 @@ class Game:
             self.players[i].target = self.players[i+1].alias
         self.players[-1].target = self.players[0].alias
 
-        # TODO: send initial messages
         for player in self.players:
             player.inbox[0].append("Hello " + str(player) + ",")
-            player.inbox[0].append("Your target is Mr. " + player.target)
+            player.inbox[0].append("Your target is Mr. " + player.target + ".")
             self.emitter.update(player.cookie, player._to_dict())
 
     def start_turn(self):
