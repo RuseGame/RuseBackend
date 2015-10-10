@@ -41,15 +41,16 @@ class Game:
 
         aliases = ALIASES[:]
         shuffle(aliases)
-        for player in self.players:
+        player_list = list(self.players.values())
+        shuffle(player_list)
+
+        for player in player_list:
             player.alias = aliases.pop()
+        for i in range(len(player_list)-1):
+            player_list[i].target = player_list[i+1].alias
+        player_list[-1].target = player_list[0].alias
 
-        shuffle(self.players)
-        for i in range(len(self.players)-1):
-            self.players[i].target = self.players[i+1].alias
-        self.players[-1].target = self.players[0].alias
-
-        for player in self.players:
+        for player in player_list:
             player.inbox[0].append("Hello " + str(player) + ",")
             player.inbox[0].append("Your target is Mr. " + player.target + ".")
             self.emitter.update(player.cookie, player._to_dict())
@@ -78,7 +79,7 @@ class Player:
 
     def _to_dict(self):
         return {
-            "name": self.nickname,
+            "name": self.name,
             "inbox": self.inbox,
             "alias": self.alias,
             "target": self.target
