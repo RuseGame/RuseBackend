@@ -51,8 +51,8 @@ class Game:
         player_list[-1].target = player_list[0].alias
 
         for player in player_list:
-            player.inbox[0].append("Hello " + str(player) + ",")
-            player.inbox[0].append("Your target is Mr. " + player.target + ".")
+            player.inbox[0].append("Hello " + str(player) + ",\n" +
+                                   "Your target is Mr. " + player.target + ".")
             self.emitter.update(player.cookie, player._to_dict())
 
     def start_turn(self):
