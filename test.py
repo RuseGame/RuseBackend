@@ -19,15 +19,15 @@ def run_tests():
             ruse.add_player(cookie, name)
         for cookie, player in ruse.players.items():
             move_list = [{"move_type": "send",
-                                         "to": player.target,
-                                         "from": player.alias,
-                                         "message": "Hi " + str(cookie)}]
+                          "to": player.target,
+                          "from": player.alias,
+                          "message": "Hi " + str(cookie)}]
             if cookie % 2 == 1:
                 move_list.append({"move_type": "spoof",
                                   "to": player.alias,
                                   "from": player.target,
                                   "spoofer": player.alias,
-                                  "message": "spoofed by " + str(player.alias)})
+                                  "message": "spoofed by " + player.alias})
             else:
                 move_list.append({"move_type": "wiretap",
                                   "tapper": player.alias,
@@ -46,7 +46,7 @@ def run_tests():
                                   "spoofer": player.alias,
                                   "to": player.alias,
                                   "from": player.target,
-                                  "message": "spoofed by " + str(player.alias)})
+                                  "message": "spoofed by " + player.alias})
             ruse.process_moves(cookie, move_list)
 
         print("\n")

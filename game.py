@@ -62,47 +62,62 @@ class Game:
         for player in self.players.values():
             player.inbox.append([])
 
-    def _validate_moves(self, mover_alias, move_list):
-        action_points = 4
+    def _validate_send(self, mover_alias, move):
         other_players = [a for a in ALIASES if a != mover_alias]
-        for move in move_list:
-            move_type = move.get("move_type")
-            if move_type in MOVE_TYPES:
-                if move_type == "send":
-                    send_from = move.get("from")
-                    send_to = move.get("to")
-                    if send_from != mover_alias or send_to not in other_players:
-                        return False
-                    action_points -= 1
-                elif move_type == "spoof":
-                    spoofed_from = move.get("from")
-                    spoofed_to = move.get("to")
-                    spoofer = move.get("spoofer")
-                    if spoofer != mover_alias or spoofed_to == spoofed_from:
-                        return False
-                    if spoofed_to not in ALIASES or spoofed_from not in ALIASES:
-                        return False
-                    action_points -= 2
-                elif move_type == "wiretap":
-                    target = move.get("target")
-                    tapper = move.get("tapper")
-                    direction = move.get("direction")
-                    if tapper != mover_alias or target not in ALIASES:
-                        return False
-                    if direction != "incoming" and direction != "outgoing":
-                        return False
-                    action_points -= 3
-                elif move_type == "ambush":
-                    target = move.get("target")
-                    attacker = move.get("attacker")
-                    if attacker != mover_alias or target not in other_players:
-                        return False
-                    action_points -= 4
-            else:
-                return False
-        if action_points < 0:
+        send_from = move.get("from")
+        send_to = move.get("to")
+        if send_from != mover_alias or \
+                send_to not in other_players:
             return False
         return True
+
+    def _validate_spoof(self, mover_alias, move):
+        spoofed_from = move.get("from")
+        spoofed_to = move.get("to")
+        spoofer = move.get("spoofer")
+        if spoofer != mover_alias or spoofed_to == spoofed_from:
+            return False
+        if spoofed_to not in ALIASES or \
+                spoofed_from not in ALIASES:
+            return False
+        return True
+
+    def _validate_wiretap(self, mover_alias, move):
+        target = move.get("target")
+        tapper = move.get("tapper")
+        direction = move.get("direction")
+        if tapper != mover_alias or target not in ALIASES:
+            return False
+        if direction != "incoming" and direction != "outgoing":
+            return False
+        return True
+
+    def _validate_ambush(self, mover_alias, other_players, move):
+        other_players = [a for a in ALIASES if a != mover_alias]
+        target = move.get("target")
+        attacker = move.get("attacker")
+        if attacker != mover_alias or target not in other_players:
+            return False
+        return True
+
+    def _validate_moves(self, mover_alias, move_list):
+        action_points = 4
+        validate_map = {"send": self._validate_send,
+                        "spoof": self._validate_spoof,
+                        "wiretap": self._validate_wiretap,
+                        "ambush": self._validate_ambush}
+        cost_map = {"send": 1,
+                    "spoof": 2,
+                    "wiretap": 3,
+                    "ambush": 4}
+        for move in move_list:
+            move_type = move.get("move_type")
+            if move_type not in validate_map:
+                return False
+            if not validate_map[move_type](mover_alias, move):
+                return False
+            action_points -= cost_map[move_type]
+        return action_points >= 0
 
     def process_moves(self, player_cookie, move_list):
         if self.turns == []:
@@ -122,14 +137,20 @@ class Game:
                      for player
                      in self.players.values()}
         for message in ending_turn.messages:
-            report = "\"" + str(message.get("message")) + "\"\n- Mr. " + str(message.get("from"))
+            report = '"{}"\n- Mr. {}'.format(
+                message.get("message"),
+                message.get("from"))
             alias_map[message.get("to")].inbox[-1].append(report)
         for wiretap in ending_turn.wiretaps:
             report = "From your wiretap:\n"
             in_out = "to" if wiretap.get("direction") == "incoming" else "from"
             for message in ending_turn.messages:
                 if message.get(in_out) == wiretap.get("target"):
-                    report += "Mr. " + str(message.get("to")) + ":\n" + str(message.get("message")) + "\n- Mr. " + str(message.get("from"))
+                    new_message = 'Mr. {}:\n"{}"\n- Mr. {}'.format(
+                        message.get("to"),
+                        message.get("message"),
+                        message.get("from"))
+                    report += new_message
             alias_map[wiretap.get("tapper")].inbox[-1].append(report)
         hits = {alias: []
                 for alias
@@ -142,7 +163,8 @@ class Game:
                 self.end_game()
                 return
             elif len(attackers) > 0:
-                alias_map[target].inbox[-1].append("You were unsucessfully attacked by Mr. " + attackers[0])
+                alias_map[target].inbox[-1].append(
+                    "You were unsucessfully attacked by Mr. " + attackers[0])
         for cookie, player in self.players.items():
             self.emitter.update(cookie, player._to_dict())
         self.start_turn()
@@ -151,6 +173,7 @@ class Game:
         for cookie, player in self.players.items():
             player.inbox.append(["Game Over."])
             self.emitter.update(cookie, player._to_dict())
+
 
 class Player:
     def __init__(self, cookie, nickname):
