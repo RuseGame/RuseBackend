@@ -1,26 +1,22 @@
-class Move:
+def alias_validate(self, *aliases):
     """
-    Move Interface
-
-    is_valid -- checks if the move is a valid move, returns True or False
-    cost     -- the amount of points it costs to make the move
+    Takes n arguments,
+    Returns True if all given args are valid, unique aliases
+    Else returns False
     """
-    cost = None
-
-    def is_valid(self):
-        raise NotImplementedError
-
-    def _alias_validate(self, *aliases):
-        alias_list = ["Pink", "Green", "Blue", "White", "Orange"]
-        for alias in aliases:
-            if alias not in alias_list:
-                return False
-            alias_list.remove(alias)
-        return True
+    alias_list = ["Pink", "Green", "Blue", "White", "Orange"]
+    for alias in aliases:
+        if alias not in alias_list:
+            return False
+        alias_list.remove(alias)
+    return True
 
 
 class Message:
-    def create_msg(self, player_from, player_to, text):
+    """
+    Interface implementation for "messaging" moves (i.e. Send & Spoof)
+    """
+    def __init__(self, player_from, player_to, text):
         self.message = {"from": player_from,
                         "to": player_to,
                         "text": text}
@@ -28,10 +24,10 @@ class Message:
     def is_valid(self):
         player_from = self.message.get("from")
         player_to = self.message.get("to")
-        return self._alias_validate(player_from, player_to)
+        return alias_validate(player_from, player_to)
 
 
-class Send(Move, Message):
+class Send(Message):
     """
     A Send command.
 
@@ -45,16 +41,11 @@ class Send(Move, Message):
     cost = 1
 
     def __init__(self, mover, player_to, text):
-        super(Move).__init__()
         self.mover = mover
         super().__init__(mover, player_to, text)
 
-    def is_valid(self):
-        player_to = self.message.get("to")
-        return self._alias_validate(self.mover, player_to)
 
-
-class Spoof(Move):
+class Spoof(Message):
     """
     A Spoof command.
 
@@ -70,15 +61,10 @@ class Spoof(Move):
 
     def __init__(self, mover, player_from, player_to, text):
         self.mover = mover
-        self.message = Message(player_from, player_to, text)
-
-    def is_valid(self):
-        player_from = self.message.get("from")
-        player_to = self.message.get("to")
-        return self._alias_validate(player_from, player_to)
+        super().__init__(player_from, player_to, text)
 
 
-class Wiretap(Move):
+class Wiretap:
     """
     A Wiretap command.
 
@@ -98,10 +84,10 @@ class Wiretap(Move):
 
     def is_valid(self):
         is_direction_valid = self.direction in ("incoming", "outgoing")
-        return self._alias_validate(self.target) and is_direction_valid
+        return alias_validate(self.target) and is_direction_valid
 
 
-class Ambush(Move):
+class Ambush:
     """
     An Ambush command.
 
@@ -118,17 +104,18 @@ class Ambush(Move):
         self.target = target
 
     def is_valid(self):
-        return self._alias_validate(self.mover, self.target)
+        return alias_validate(self.mover, self.target)
 
 
 def move_factory(data):
+    move_type = data.get("move_type")
+    move = data.get("move")
     move_map = {"send": Send,
                 "spoof": Spoof,
                 "wiretap": Wiretap,
                 "ambush": Ambush}
-    move_spawner = move_map.get(data.get("move_type"))
-    move = data.get("move")
+    move_spawner = move_map.get(move_type)
     try:
         return move_spawner(**move)
-    finally:
+    except:
         return None
